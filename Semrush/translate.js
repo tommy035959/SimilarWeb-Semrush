@@ -199,15 +199,16 @@
         const button = document.createElement('button');
         button.id = 'translate-btn';
         button.textContent = '关键字翻译';
-        button.style.cssText = `
-            padding: 8px 16px;
+               button.style.cssText = `
+
             background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            margin: 5px;
+            height: 28px;
+            min-width:100px;
             transition: background-color 0.3s;
         `;
 
@@ -344,35 +345,20 @@
     /**
      * 初始化插件
      */
-    function init() {
-        console.log('翻译插件已加载（批量API版本）');
-        console.log('使用 Google translateHtml API 进行批量翻译');
 
-        // 等待DOM加载完成后创建按钮
+    function init() {
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                createTranslateButton();
-            });
+            document.addEventListener('DOMContentLoaded', createTranslateButton);
         } else {
             createTranslateButton();
         }
-
-        // 创建防抖版本的按钮创建函数
-        const debouncedAddButtons = debounce(() => {
-            createTranslateButton();
-
-        }, 300);
-
-        // 监听DOM变化，自动添加按钮
-        const observer = new MutationObserver(debouncedAddButtons);
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-
-        console.log('DOM变化监听已启动');
-         adjustWidth();
+        adjustWidth();
+        const observer = new MutationObserver(() => createExportButton());
+        observer.observe(document.body, { childList: true, subtree: true });
     }
+
+
+ 
 
 
     // 启动插件
