@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name         Semrush数据导出Excel
+// @name         Semrush&SimilarWeb工具
 // @namespace    http://tampermonkey.net/
 // @version      2026-03-28
-// @description  导出Semrush分析数据为Excel，支持翻译功能
+// @description  导出数据为Excel，支持翻译功能
 // @author       Tommy
-// @match        https://sem.3ue.co/analytics/organic/positions/*
-// @match        https://sem.3ue.co/analytics/keywordmagic/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=www.semrush.com
+// @match        https://sem.3ue.co/analytics/*
+// @match        https://sim.3ue.co/
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=3ue.co
 // @connect      translate-pa.googleapis.com
 // @grant        none
 // ==/UserScript==
@@ -45,7 +45,7 @@
 
     function getTotalPages() {
         const pagination = document.querySelector('[data-ui-name="Pagination"]');
-        if (!pagination) return null;
+        if (!pagination) return 1;
         const pageText = pagination.textContent;
         const match1 = pageText.match(/共\s*(\d+)\s*页/);
         if (match1) return parseInt(match1[1]);
@@ -57,7 +57,7 @@
         const pageButtons = Array.from(pagination.querySelectorAll('button'))
             .map(btn => parseInt(btn.textContent.replace(/,/g, '')))
             .filter(n => !isNaN(n) && n > 0);
-        return pageButtons.length > 0 ? Math.max(...pageButtons) : null;
+        return pageButtons.length > 0 ? Math.max(...pageButtons) : 1;
     }
 
     function getCurrentDomain() {
@@ -140,17 +140,18 @@
 
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        const currentPage = getCurrentPage();
-        const totalPages = getTotalPages();
-
-        if (!totalPages) {
-            alert('无法读取总页数，请确认分页器已加载');
+        const table = document.querySelector('[data-ui-name="DataTable"]');
+        if (!table) {
+            alert('没有需要导出的数据');
             button.textContent = '导出Excel';
             button.style.backgroundColor = '#4CAF50';
             button.style.cursor = 'pointer';
             button.disabled = false;
             return;
         }
+
+        const currentPage = getCurrentPage();
+        const totalPages = getTotalPages();
 
         const remainingPages = totalPages - currentPage + 1;
         let pagesToExport = remainingPages;
@@ -243,16 +244,15 @@
 
     function createExportButton() {
         if (document.getElementById('export-excel-btn')) return;
-        const container = document.querySelector('[data-at="table-controls"],.kwo-one-line-layout,.export-buttons-wrapper,.FiltersContainer');
-        if (!container) {
-            setTimeout(createExportButton, 3000);
-            return;
-        }
 
         const button = document.createElement('button');
         button.id = 'export-excel-btn';
         button.textContent = '导出Excel';
         button.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 9999;
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -272,7 +272,7 @@
         });
 
         button.addEventListener('click', exportAllPages);
-        container.prepend(button);
+        document.body.appendChild(button);
     }
 
     // ==================== 翻译功能 ====================
@@ -389,16 +389,15 @@
 
     function createTranslateButton() {
         if (document.getElementById('translate-btn')) return;
-        const filterLayout = document.querySelector('[data-at="table-controls"],.kwo-one-line-layout,.export-buttons-wrapper,.FiltersContainer');
-        if (!filterLayout) {
-            setTimeout(createTranslateButton, 3000);
-            return;
-        }
 
         const button = document.createElement('button');
         button.id = 'translate-btn';
         button.textContent = '关键字翻译';
         button.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 130px;
+            z-index: 9999;
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -440,14 +439,15 @@
             addGoogleTrendsButtons();
         });
 
-        filterLayout.prepend(button);
+        document.body.appendChild(button);
     }
 
-    function adjustWidth() {
+    //调整 SimilarWeb 页面的宽度
+      function adjustWidth() {
         if (document.getElementById('sw-width-override')) return;
         const style = document.createElement('style');
         style.id = 'sw-width-override';
-        style.textContent = `.sw-layout-page, .sw-layout-page-max-width { max-width: 100% !important; margin: 0 auto; padding: 0 43px 50px; }`;
+        style.textContent = `.sw-layout-page, .sw-layout-page-max-width { max-width: 2000px !important; margin: 0 auto; padding: 0 43px 50px; }`;
         document.head.appendChild(style);
     }
 
@@ -463,12 +463,14 @@
             createExportButton();
             createTranslateButton();
         }
-        adjustWidth();
+ 
         const observer = new MutationObserver(() => {
             createExportButton();
             createTranslateButton();
         });
         observer.observe(document.body, { childList: true, subtree: true });
+
+        adjustWidth();
     }
 
     init();
